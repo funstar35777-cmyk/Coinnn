@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪐 星球基地 - 店內複合帳務系統</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #ca8a04;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { background-color: #f1f5f9; color: var(--dark); padding: 15px; }
+        header { background: linear-gradient(135deg, #312e81, #4f46e5); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h2 { font-size: 1.1rem; margin-bottom: 12px; border-left: 4px solid var(--primary); padding-left: 8px; color: #334155; }
+        
+        /* 狀態列樣式 */
+        .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .status-box { background: var(--light); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
+        .status-box .val { font-size: 1.3rem; font-weight: bold; color: var(--primary); margin-top: 5px; }
+        .status-box.cash .val { color: var(--success); }
+
+        /* 初始設定面板 */
+        .admin-panel { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        
+        /* 按鈕與表單 */
+        .btn { display: inline-block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s; margin-bottom: 8px; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-warning { background-color: var(--warning); color: white; }
+        .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #64748b; font-weight: 600; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+
+        /* 快捷鍵網格 */
+        .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .btn-quick { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; font-size: 0.9rem; border-radius: 8px; cursor: pointer; text-align: left; }
+        .btn-quick span { display: block; font-size: 0.75rem; color: #64748b; }
+        .btn-quick:active { background: #e2e8f0; }
+
+        /* 刪除小按鈕 */
+        .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 6px; }
+        .btn-delete:active { background: #fee2e2; }
+
+        /* 流水帳表格 */
+        .log-container { max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        th, td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; position: sticky; top: 0; color: #475569; }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        /* 彈出視窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; padding: 15px; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow-y: auto; max-height: 90vh; }
+        
+        .report-box { background: #f8fafc; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; border: 1px dashed #cbd5e1; }
+        .diff-error { color: var(--danger); font-weight: bold; }
+        .diff-ok { color: var(--success); font-weight: bold; }
+        .required-tag { color: var(--danger); font-weight: bold; margin-left: 2px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 style="font-size: 1.4rem; margin-bottom: 5px;">🪐 星球基地 智能記帳系統</h1>
+        <p style="font-size: 0.85rem; opacity: 0.9;">即時追蹤現金與代幣庫存，防呆交班免算計算機</p>
+    </header>
+
+    <div class="admin-panel">
+        <details>
+            <summary style="font-weight: bold; color: var(--warning); cursor: pointer; user-select: none;">⚙️ [店長專用] 點此設定/修正目前店內初始數量 (匯出檔案時會特別標示)</summary>
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; margin-bottom: 10px;">
+                <div class="form-group"><label>設定初始現金 ($)</label><input type="number" id="init-cash" value="0"></div>
+                <div class="form-group"><label>設定初始倉庫 (袋)</label><input type="number" id="init-canvas" value="10"></div>
+                <div class="form-group"><label>設定初始50枚包 (包)</label><input type="number" id="init-bags" value="50"></div>
+                <div class="form-group"><label>設定初始散幣盤 (枚)</label><input type="number" id="init-loose" value="100"></div>
+            </div>
+            <button class="btn btn-warning" style="margin-bottom:0; padding:8px;" onclick="setupInitialStock()">💾 立即更新帳面初始數量</button>
+        </details>
+    </div>
+
+    <div class="card" style="margin-bottom: 15px;">
+        <h2>📊 目前櫃檯與帳面狀態 (系統即時計算)</h2>
+        <div class="status-grid">
+            <div class="status-box cash">
+                <label>💰 櫃檯現金帳面</label>
+                <div class="val" id="sys-cash">$0</div>
+            </div>
+            <div class="status-box">
+                <label>📦 倉庫帆布袋</label>
+                <div class="val" id="sys-canvas">0 袋</div>
+            </div>
+            <div class="status-box">
+                <label>🛍️ 50枚夾鏈袋</label>
+                <div class="val" id="sys-bags">0 包</div>
+            </div>
+            <div class="status-box">
+                <label>🪙 散幣盤數量</label>
+                <div class="val" id="sys-loose">0 枚</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- 區塊一：櫃檯庫存內部轉換（加入倉庫增加設置位置） -->
+        <div class="card">
+            <h2>🔄 櫃檯庫存內部轉換</h2>
+            <button class="btn btn-success" style="background-color: var(--success); margin-bottom: 12px;" onclick="addCanvasStock()">➕ 倉庫帆布袋進貨 (+1袋)</button>
+            <button class="btn btn-outline" onclick="convertStock('canvas_to_bags')">📥 從倉庫拿 1 帆布袋 (-1袋, +30包)</button>
+            <button class="btn btn-outline" onclick="convertStock('bag_to_loose')">🔄 拆 1 包夾鏈袋 (-1包, +50散幣)</button>
+            <p style="font-size:0.75rem; color:#94a3b8; text-align:center; margin-top:5px;">※ 散幣盤上限 500 枚，拆包前請注意空間</p>
+        </div>
+
+        <!-- 區塊二：客人購買星球幣 -->
+        <div class="card">
+            <h2>🪙 客人換星球幣 (1枚 = 10元)</h2>
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <label>🔥 活動快捷購幣</label>
+                <button class="btn btn-warning" style="color:var(--dark); margin-bottom:12px; border:1px solid #ca8a04;" onclick="openBuy500Modal()">⚡ 換 500 元 / 零散包數與散幣登記</button>
+                
+                <div class="quick-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <button class="btn btn-primary" onclick="buyCoinsPreset(1000, 2)">$1000<span style="display:block;font-size:0.7rem;font-weight:normal;">(2包/刮金豆)</span></button>
+                    <button class="btn btn-primary" onclick="buyCoinsPreset(2000, 4)">$2000<span style="display:block;font-size:0.7rem;font-weight:normal;">(4包/刮金豆)</span></button>
+                    <button class="btn btn-primary" onclick="buyCoinsPreset(3000, 6)">$3000<span style="display:block;font-size:0.7rem;font-weight:normal;">(6包/刮金豆)</span></button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>一般散買純百位元（如 100, 200, 300, 400）</label>
+                <input type="number" id="buy-cash-input" placeholder="最低 100 元，請勿輸入500或千元">
+            </div>
+            <button class="btn btn-success" onclick="buyCoinsCustom()">確認送出散買</button>
+        </div>
+
+        <!-- 區塊三：客人將星球幣換回現金 -->
+        <div class="card" style="border: 1px solid #fca5a5; background: #fff5f5;">
+            <h2 style="border-left-color: var(--danger); color: #991b1b;">🛸 客人星球幣換回現金 (需留記錄)</h2>
+            <p style="font-size:0.75rem; color:#b91c1c; margin-bottom:10px;">※ 大額兌回會自動記錄當下時間，且【經手人】與【會員】為強制必填項目。</p>
+            <div class="quick-grid">
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1, 10, true)">🔄 1 枚 <span>退 $10 現金 (快速免填)</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(250, 2000, false)">🔄 250 枚 <span>退 $2,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(630, 5000, false)">🔄 630 枚 <span>退 $5,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1300, 10000, false)">🔄 1300 枚 <span>退 $10,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5; grid-column: span 2;" onclick="refundCoins(125000, 100000, false)">🔄 125,000 枚 大額兌回 <span>退 $100,000 現金</span></button>
+            </div>
+        </div>
+
+        <!-- 區塊四：商品販售區（擴充八門遁甲、決戰七星、一發入魂） -->
+        <div class="card">
+            <h2>🛍️ 商品販售區 (實收現金，代幣不減)</h2>
+            <div class="quick-grid">
+                <button class="btn-quick" style="background:#fef3c7; border-color:#ca8a04;" onclick="sellProduct('八門遁甲', 300, 0)">🔥 八門遁甲 <span>$300 現金</span></button>
+                <button class="btn-quick" style="background:#fef3c7; border-color:#ca8a04;" onclick="sellProduct('決戰七星', 200, 0)">🔥 決戰七星 <span>$200 現金</span></button>
+                <button class="btn-quick" style="background:#fef3c7; border-color:#ca8a04;" onclick="sellProduct('一發入魂', 250, 0)">🔥 一發入魂 <span>$250 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('多佛朗明哥刮刮樂', 200, 20)">多佛朗明哥 <span>$200 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('夜市bingo刮刮樂', 100, 10)">夜市bingo <span>$100 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('陀螺套(小)', 150, 15)">陀螺套 (15幣) <span>$150 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('陀螺套(大)', 300, 30)">陀螺套 (30幣) <span>$300 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('龍珠1抽', 10, 1)">龍珠 1 抽 <span>$10 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('龍珠5抽', 40, 4)">龍珠 5 抽 <span>$40 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('飲料(小)', 20, 2)">飲料 (2幣) <span>$20 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('飲料(中)', 30, 3)">飲料 (3幣) <span>$30 現金</span></button>
+                <button class="btn-quick" onclick="sellProduct('飲料(大)', 50, 5)">飲料 (5幣) <span>$50 現金</span></button>
+                <button class="btn-quick" style="grid-column: span 2;" onclick="sellProductCustom()">➕ 自訂販售商品...</button>
+            </div>
+        </div>
+
+        <!-- 區塊五：送幣與故障補幣登記（加入兌千沒中快捷按鈕） -->
+        <div class="card" style="border: 1px solid #cbd5e1; background: #fafafa;">
+            <h2>🎁 送幣 / 補幣 / 萬用活動變動登記 (無現金交易)</h2>
+            
+            <div style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fef3c7; margin-bottom: 12px;">
+                <label style="color:var(--warning); font-weight: bold; margin-bottom: 6px;">⚡ 常見活動一鍵快選區</label>
+                <button class="btn btn-warning" style="margin-bottom:0; font-size:0.9rem; color:var(--dark);" onclick="quickGiftScratchcard()">🎯 兌千刮刮樂沒中送 1 枚 (自動代入)</button>
+            </div>
+
+            <div class="form-group">
+                <label>活動 / 變動項目類型</label>
+                <select id="gift-event" onchange="toggleCustomEventInput()">
+                    <option value="故障補幣給客人">🛠️ 故障補幣給客人 (強制扣除散幣盤)</option>
+                    <option value="娃娃機存點送幣">娃娃機存點送幣</option>
+                    <option value="彈珠冒險王送幣">彈珠冒險王送幣</option>
+                    <option value="兌千刮刮樂沒中送幣">兌千刮刮樂沒中送幣</option>
+                    <option value="章魚燒送幣">章魚燒送幣</option>
+                    <option value="足球台送幣">足球台送幣</option>
+                    <option value="魔沼送幣">魔沼送幣</option>
+                    <option value="多佛朗明哥刮刮樂送幣">多佛朗明哥刮刮樂送幣</option>
+                    <option value="夜市bingo刮刮樂送幣">夜市bingo刮刮樂送幣</option>
+                    <option value="CUSTOM_OTHER">📝 其他（自行填寫活動名稱與進出）</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="custom-event-wrapper" style="display: none; background:#fffbeb; padding:8px; border-radius:6px; border:1px solid #fef3c7;">
+                <label style="color:var(--warning)">✍️ 請輸入自訂活動名稱：<span class="required-tag">*</span></label>
+                <input type="text" id="gift-custom-name" placeholder="例如：Google五星好評活動">
+            </div>
+
+            <div class="form-group">
+                <label>星球幣流向</label>
+                <select id="gift-direction">
+                    <option value="SUBTRACT">🎁 贈送給客人 (店內代幣庫存減少)</option>
+                    <option value="ADD">📥 從客人那收回 (店內代幣庫存增加)</option>
+                </select>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:0;">
+                <div class="form-group"><label>經手員工 <span class="required-tag">*</span></label><input type="text" id="gift-staff" placeholder="必填姓名"></div>
+                <div class="form-group"><label>會員 <span class="required-tag">*</span></label><input type="text" id="gift-member" placeholder="必填註記"></div>
+            </div>
+            <div class="form-group">
+                <label>變動星球幣數量 (枚) <span class="required-tag">*</span></label>
+                <input type="number" id="gift-amount" placeholder="請輸入正整數數量">
+            </div>
+            <button class="btn btn-warning" onclick="submitGift()">登記變動項目</button>
+        </div>
+    </div>
+
+    <!-- 流水帳查看與交班（加入刪除鍵與姓名稽核機制） -->
+    <div class="card" style="margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2>📜 本班次隨時流水紀錄</h2>
+            <button class="btn btn-outline" style="width:auto; margin-bottom:0; padding: 5px 10px; font-size:0.8rem;" onclick="exportToCSV()">💾 匯出 Excel (CSV)</button>
+        </div>
+        <div class="log-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>時間</th>
+                        <th>項目與摘要</th>
+                        <th>現金</th>
+                        <th>帆布袋</th>
+                        <th>50枚包</th>
+                        <th>散幣</th>
+                        <th>備註/經手人/會員</th>
+                        <th style="width: 50px; text-align: center;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="log-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button class="btn btn-success" style="background:#059669; padding: 15px; font-size:1.1rem;" onclick="openCloseModal()">🏁 執行班次交接結帳 (盲測清點)</button>
+
+    <div class="modal" id="buy500-modal">
+        <div class="modal-content">
+            <h2>⚡ 換500元 / 零散代幣混合登記面板</h2>
+            <p style="margin-top: 5px; margin-bottom: 15px; font-size: 0.8rem; color: #64748b; line-height: 1.3;">
+                如為單純更換500元，請直接點擊下方「快選快捷鍵」。如需同時登記其他零散包數與散幣，請填寫下方欄位。
+            </p>
+            
+            <div style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fef3c7;">
+                <label style="color:var(--warning); font-weight: bold; margin-bottom: 8px;">👉 方案 A：快速更換 500 元快捷鍵</label>
+                <button class="btn btn-success" style="margin-bottom: 8px; font-size: 0.9rem;" onclick="executeBuy500(true)">【有核銷Ocard券】收500元 / 給 1包 + 10枚散幣</button>
+                <button class="btn btn-primary" style="margin-bottom: 0; font-size: 0.9rem;" onclick="executeBuy500(false)">【無核銷Ocard券】收500元 / 給 1包夾鏈袋</button>
+            </div>
+
+            <hr style="margin: 15px 0; border: 0; border-top: 2px dashed #e2e8f0;">
+
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <label style="color:var(--primary); font-weight: bold; margin-bottom: 8px;">👉 方案 B：自訂零散包數與散幣出入</label>
+                <div class="form-group">
+                    <label>實收現金總額 (元)</label>
+                    <input type="number" id="detail-cash" value="0">
+                </div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0;">
+                    <div class="form-group">
+                        <label>給出幾包夾鏈袋 (包)</label>
+                        <input type="number" id="detail-bags" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>給出幾個散幣 (枚)</label>
+                        <input type="number" id="detail-loose" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>備註說明 (選填)</label>
+                    <input type="text" id="detail-memo" placeholder="例如：特別散買處理等">
+                </div>
+                <button class="btn btn-outline" style="margin-bottom: 0; background: white;" onclick="executeDetailTransaction()">確認送出零散變動</button>
+            </div>
+
+            <button class="btn btn-danger" style="margin-top:15px; padding: 8px;" onclick="closeBuy500Modal()">關閉視窗</button>
+        </div>
+    </div>
+
+    <div class="modal" id="close-modal">
+        <div class="modal-content">
+            <h2 style="border-left-color: var(--success);">🏁 班次交接與現場清點</h2>
+            <p style="font-size:0.8rem; color:#64748b; margin-bottom:15px;">請員工清點現場實際擁有的精準數量，系統將自動比對誤差。</p>
+            
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:0;">
+                <div class="form-group"><label>交班人員 A</label><input type="text" id="staff-a" placeholder="填寫姓名"></div>
+                <div class="form-group"><label>接班人員 B</label><input type="text" id="staff-b" placeholder="填寫姓名"></div>
+            </div>
+            <hr style="margin: 10px 0; border:0; border-top:1px solid #e2e8f0;">
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:0;">
+                <div class="form-group"><label>現場實點【現金總額】</label><input type="number" id="real-cash" placeholder="元"></div>
+                <div class="form-group"><label>現場實點【倉庫帆布袋】</label><input type="number" id="real-canvas" placeholder="袋"></div>
+                <div class="form-group"><label>現場實點【50枚夾鏈袋】</label><input type="number" id="real-bags" placeholder="包"></div>
+                <div class="form-group"><label>現場實點【散幣盤個數】</label><input type="number" id="real-loose" placeholder="個"></div>
+            </div>
+
+            <button class="btn btn-success" style="margin-top:15px;" onclick="calculateDiscrepancy()">🔍 送出清點並計算大水</button>
+            
+            <div id="report-wrapper" style="display:none;">
+                <div class="report-box" id="report-text"></div>
+                <p style="font-size:0.75rem; color:var(--danger); margin-top:5px; font-weight:bold;">⚠️ 確認結班後，本班現金將自動清點歸零移交！</p>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; margin-bottom:0;">
+                    <button class="btn btn-primary" onclick="confirmShiftEnd()">確認結班並現金歸零</button>
+                    <button class="btn btn-outline" style="border-color:#cbd5e1; color:#64748b;" onclick="closeModal()">返回修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            cash: 0,
+            canvas: 0,   
+            bags: 0,     
+            loose: 0,   
+            logs: []
+        };
+
+        if (localStorage.getItem('shop_ledger_state')) {
+            state = JSON.parse(localStorage.getItem('shop_ledger_state'));
+            document.getElementById('init-cash').value = state.cash;
+            document.getElementById('init-canvas').value = state.canvas;
+            document.getElementById('init-bags').value = state.bags;
+            document.getElementById('init-loose').value = state.loose;
+        }
+
+        function setupInitialStock() {
+            const iCash = parseInt(document.getElementById('init-cash').value) || 0;
+            const iCanvas = parseInt(document.getElementById('init-canvas').value) || 0;
+            const iBags = parseInt(document.getElementById('init-bags').value) || 0;
+            const iLoose = parseInt(document.getElementById('init-loose').value) || 0;
+
+            state.cash = iCash;
+            state.canvas = iCanvas;
+            state.bags = iBags;
+            state.loose = iLoose;
+
+            logAction_Override('⚠️【店長重設初始值】', `[系統強制校正] 現金重設為: ${iCash} | 倉庫: ${iCanvas}袋 | 夾鏈袋: ${iBags}包 | 散幣: ${iLoose}枚`);
+            alert('初始庫存已成功鎖定更新！');
+        }
+
+        function logAction_Override(desc, memo) {
+            state.logs.unshift({
+                id: Date.now() + Math.random(),
+                isDeleted: false,
+                deletePerson: '',
+                date: getDateStr(),
+                time: getTimeStr(),
+                desc: desc,
+                cash: 0,  
+                canvas: 0,
+                bags: 0,
+                loose: 0,
+                memo: memo
+            });
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('sys-cash').innerText = `$${state.cash.toLocaleString()}`;
+            document.getElementById('sys-canvas').innerText = `${state.canvas} 袋`;
+            document.getElementById('sys-bags').innerText = `${state.bags} 包`;
+            document.getElementById('sys-loose').innerText = `${state.loose} 枚`;
+            localStorage.setItem('shop_ledger_state', JSON.stringify(state));
+            renderLogs();
+        }
+
+        function getTimeStr() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        }
+        function getDateStr() {
+            const now = new Date();
+            return `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+        }
+
+        function logAction(type, desc, cashDiff, canvasDiff, bagsDiff, looseDiff, memo="") {
+            state.cash += cashDiff;
+            state.canvas += canvasDiff;
+            state.bags += bagsDiff;
+            state.loose += looseDiff;
+            
+            state.logs.unshift({
+                id: Date.now() + Math.random(),
+                isDeleted: false,
+                deletePerson: '',
+                date: getDateStr(),
+                time: getTimeStr(),
+                desc: desc,
+                cash: cashDiff,
+                canvas: canvasDiff,
+                bags: bagsDiff,
+                loose: looseDiff,
+                memo: memo
+            });
+            updateUI();
+        }
+
+        function renderLogs() {
+            const tbody = document.getElementById('log-tbody');
+            tbody.innerHTML = '';
+            state.logs.forEach(l => {
+                const tr = document.createElement('tr');
+                if(l.isDeleted) {
+                    tr.style.opacity = '0.4';
+                    tr.style.background = '#e2e8f0';
+                } else {
+                    if(l.desc.includes('店長重設')) { tr.style.background = '#fffbeb'; }
+                    if(l.desc.includes('代幣換回現金')) { tr.style.background = '#fef2f2'; }
+                    if(l.desc.includes('收回')) { tr.style.background = '#f0fdf4'; }
+                }
+
+                let deleteBtnHtml = l.isDeleted ? '－' : `<button class="btn-delete" onclick="deleteLogItem(${l.id})"><i class="ti ti-trash"></i></button>`;
+
+                tr.innerHTML = `
+                    <td>${l.time}</td>
+                    <td style="font-weight:600; color:${l.desc.includes('店長重設') ? 'var(--warning)' : 'inherit'}">${l.isDeleted ? '[已撤銷] ' + l.desc : l.desc}</td>
+                    <td style="color:${l.cash >= 0 ? 'var(--success)' : 'var(--danger)'}">${l.cash > 0 ? '+' : ''}${l.cash || (l.cash < 0 ? l.cash : 0)}</td>
+                    <td>${l.canvas > 0 ? '+' : ''}${l.canvas}</td>
+                    <td>${l.bags > 0 ? '+' : ''}${l.bags}</td>
+                    <td>${l.loose > 0 ? '+' : ''}${l.loose}</td>
+                    <td style="color:#64748b; font-weight:${l.desc.includes('店長重設') ? 'bold' : 'normal'}">${l.isDeleted ? '【由 ' + l.deletePerson + ' 撤銷】' + l.memo : l.memo}</td>
+                    <td style="text-align:center;">${deleteBtnHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 🌟【全新功能】手動增加倉庫帆布袋進貨
+        function addCanvasStock() {
+            logAction('庫存變動', '倉庫帆布袋進貨', 0, 1, 0, 0, '補貨入倉庫庫存');
+            alert('成功！倉庫帆布袋庫存已增加 1 袋。');
+        }
+
+        function convertStock(action) {
+            if (action === 'canvas_to_bags') {
+                if (state.canvas < 1) return alert('倉庫帆布袋庫存不足！');
+                logAction('庫存轉換', '倉庫提領 1 帆布袋', 0, -1, 30, 0, '補貨到櫃檯');
+            } else if (action === 'bag_to_loose') {
+                if (state.bags < 1) return alert('櫃檯50枚夾鏈袋不足！');
+                if (state.loose + 50 > 500) {
+                    if (!confirm('散幣盤數量加50後將超過500枚上限，確定要拆包嗎？')) return;
+                }
+                logAction('庫存轉換', '拆 1 包 50 枚夾鏈袋', 0, 0, -1, 50, '補充散幣盤');
+            }
+        }
+
+        function buyCoinsPreset(amount, bagsToDeduct) {
+            if (state.bags < bagsToDeduct) {
+                alert(`櫃檯夾鏈袋庫存不足！`);
+                return;
+            }
+            logAction('客人購幣', `客人更換現金 $${amount}`, amount, 0, -bagsToDeduct, 0, `大額換幣(給${bagsToDeduct}包)，提示發放刮金豆`);
+        }
+
+        function openBuy500Modal() {
+            document.getElementById('buy500-modal').style.display = 'flex';
+        }
+        function closeBuy500Modal() {
+            document.getElementById('buy500-modal').style.display = 'none';
+        }
+
+        function executeBuy500(hasOcardTicket) {
+            let bagsToDeduct = 1;
+            let looseToDeduct = hasOcardTicket ? 10 : 0;
+            let memoStr = hasOcardTicket ? "換500活動【核銷Ocard券】給 1包夾鏈袋 與 10枚散幣" : "換500活動【無核銷券】給 1包夾鏈袋";
+
+            if (state.bags < bagsToDeduct) { return alert('櫃檯夾鏈袋庫存不足 1 包！'); }
+            if (state.loose < looseToDeduct) { return alert(`散幣盤不足！`); }
+
+            logAction('客人購幣', '客人換 500 元星球幣', 500, 0, -bagsToDeduct, -looseToDeduct, memoStr);
+            closeBuy500Modal();
+        }
+
+        function refundCoins(coinAmount, cashPayout, isSingleCoin) {
+            let staffName = "無";
+            let memberInfo = "無";
+            const timeStamp = getTimeStr();
+
+            if (!isSingleCoin) {
+                staffName = prompt(`【🚨 大額退現防呆】請輸入目前【經手員工姓名】(必填)：`);
+                if (!staffName || staffName.trim() === "") return alert("錯誤：必須輸入經手人姓名才能退現！項目已取消。");
+                
+                memberInfo = prompt(`【🚨 大額退現防呆】請輸入【兌換會員名稱或電話】(必填)：`);
+                if (!memberInfo || memberInfo.trim() === "") return alert("錯誤：必須輸入會員名稱或電話才能退現！項目已取消。");
+            }
+
+            if (!confirm(`確認要執行代幣回收嗎？\n時間：${timeStamp}\n回收：${coinAmount} 枚星球幣\n付出店內現金：$${cashPayout} 元`)) return;
+            if (state.cash < cashPayout) { return alert(`櫃檯現金不足，無法退款！`); }
+
+            let bagsToAdd = Math.floor(coinAmount / 50);
+            let looseToAdd = coinAmount % 50;
+
+            if (state.loose + looseToAdd > 500) {
+                bagsToAdd += 1;
+                looseToAdd -= 50;
+            }
+
+            let memoStr = `代幣回購 | 時間:${timeStamp} | 經手:${staffName.trim()} | 会员:${memberInfo.trim()} | 歸庫: +${bagsToAdd}包, +${looseToAdd}枚散幣`;
+            logAction('代幣換回現金', `🚨 退還現金 -$${cashPayout}`, -cashPayout, 0, bagsToAdd, looseToAdd, memoStr);
+        }
+
+        function executeDetailTransaction() {
+            const dCash = parseInt(document.getElementById('detail-cash').value) || 0;
+            const dBags = parseInt(document.getElementById('detail-bags').value) || 0;
+            const dLoose = parseInt(document.getElementById('detail-loose').value) || 0;
+            const dMemo = document.getElementById('detail-memo').value.trim();
+
+            if (dCash < 0 || dBags < 0 || dLoose < 0) { return alert('請輸入有效數字！'); }
+            if (state.bags < dBags) { return alert(`櫃檯夾鏈袋不足！`); }
+            if (state.loose < dLoose) { return alert(`散幣盤不足！`); }
+
+            let fullMemo = `零散細項登記 | 給出:${dBags}包 與 ${dLoose}枚散幣 | ` + (dMemo ? dMemo : "無備註");
+            logAction('客人購幣', `綜合零散購幣登記 (收現$${dCash})`, dCash, 0, -dBags, -dLoose, fullMemo);
+
+            document.getElementById('detail-cash').value = 0;
+            document.getElementById('detail-bags').value = 0;
+            document.getElementById('detail-loose').value = 0;
+            document.getElementById('detail-memo').value = '';
+            closeBuy500Modal();
+        }
+
+        function buyCoinsCustom() {
+            const cashInput = document.getElementById('buy-cash-input');
+            const cashVal = parseInt(cashInput.value);
+            
+            if (isNaN(cashVal) || cashVal < 100 || cashVal % 10 !== 0) { return alert('請輸入有效金額！最低 100 元且必須為 10 的倍數。'); }
+            if (cashVal === 500) { return alert('換500元請直接點擊上方的黃色大按鈕！'); }
+
+            let coinsToGive = cashVal / 10; 
+            let memoStr = `一般純百位數換幣，共給 ${coinsToGive} 枚散幣`;
+
+            if (state.loose < coinsToGive) { return alert(`散幣盤不足！`); }
+            logAction('客人購幣', `客人散買換現金 $${cashVal}`, cashVal, 0, 0, -coinsToGive, memoStr);
+            cashInput.value = '';
+        }
+
+        function sellProduct(prodName, cashPrice, coinEquivalent) {
+            logAction('商品販售', `販售 ${prodName}`, cashPrice, 0, 0, 0, `對應帳面 ${coinEquivalent} 幣 (代幣庫存不扣除)`);
+        }
+
+        function sellProductCustom() {
+            const name = prompt("請輸入商品或抽獎名稱:");
+            if (!name) return;
+            const cash = parseInt(prompt("請輸入實收現金金額 (元):"));
+            if (isNaN(cash)) return;
+            const coin = parseInt(prompt("請輸入帳面顯示對應的星球幣數量 (幣):"));
+            if (isNaN(coin)) return;
+            sellProduct(name, cash, coin);
+        }
+
+        function toggleCustomEventInput() {
+            const eventSelect = document.getElementById('gift-event').value;
+            const customWrapper = document.getElementById('custom-event-wrapper');
+            if (eventSelect === 'CUSTOM_OTHER') {
+                customWrapper.style.display = 'block';
+            } else {
+                customWrapper.style.display = 'none';
+            }
+        }
+
+        // 🌟【全新功能】兌千刮刮樂沒中送1枚一鍵快選代入
+        function quickGiftScratchcard() {
+            document.getElementById('gift-event').value = '兌千刮刮樂沒中送幣';
+            document.getElementById('gift-direction').value = 'SUBTRACT';
+            document.getElementById('gift-amount').value = 1;
+            toggleCustomEventInput();
+            alert('已成功自動填寫活動為【兌千刮刮樂沒中送幣】、數量【1枚】，請填寫經手人與會員即可按登記送出！');
+        }
+
+        function submitGift() {
+            const eventSelect = document.getElementById('gift-event').value;
+            const direction = document.getElementById('gift-direction').value;
+            const staff = document.getElementById('gift-staff').value.trim();
+            const member = document.getElementById('gift-member').value.trim();
+            const amountInput = document.getElementById('gift-amount');
+            const amount = parseInt(amountInput.value);
+
+            if (!staff || staff === "") return alert('【❌ 登記失敗】經手員工為必填項目！');
+            if (!member || member === "") return alert('【❌ 登記失敗】會員欄位為必填項目！');
+            if (isNaN(amount) || amount <= 0) return alert('【❌ 登記失敗】變動星球幣數量為必填，且必須大於 0 的正整數！');
+
+            let finalEventName = eventSelect;
+            if (eventSelect === 'CUSTOM_OTHER') {
+                const customName = document.getElementById('gift-custom-name').value.trim();
+                if (!customName || customName === "") return alert('【❌ 登記失敗】您選擇了其他項目，請填寫自訂活動名稱！');
+                finalEventName = `自訂活動: ${customName}`;
+            }
+
+            let bagsDiff = 0;
+            let looseDiff = 0;
+            let logTitle = '';
+
+            if (direction === 'SUBTRACT') {
+                logTitle = `🎁活動扣幣-${finalEventName}`;
+                if (finalEventName === '故障補幣給客人') {
+                    looseDiff = -amount;
+                } else {
+                    bagsDiff = -Math.floor(amount / 50);
+                    looseDiff = -(amount % 50);
+                }
+                if (state.bags < Math.abs(bagsDiff)) { return alert(`櫃檯夾鏈袋庫存不足！`); }
+                if (state.loose < Math.abs(looseDiff)) { return alert(`散幣盤庫存不足！`); }
+            } else {
+                logTitle = `📥活動收回-${finalEventName}`;
+                bagsDiff = Math.floor(amount / 50);
+                looseDiff = amount % 50;
+
+                if (state.loose + looseDiff > 500) {
+                    bagsDiff += 1;
+                    looseDiff -= 50;
+                }
+            }
+
+            let memoStr = `經手:${staff} | 會員:${member} | 庫存變動: [${bagsDiff >= 0 ? '+' : ''}${bagsDiff}包] 與 [${looseDiff >= 0 ? '+' : ''}${looseDiff}枚]`;
+            logAction('項目變動', logTitle, 0, 0, bagsDiff, looseDiff, memoStr);
+
+            amountInput.value = '';
+            document.getElementById('gift-member').value = '';
+            document.getElementById('gift-custom-name').value = '';
+            document.getElementById('gift-staff').value = '';
+            document.getElementById('gift-amount').value = '';
+            document.getElementById('gift-event').value = '故障補幣給客人';
+            document.getElementById('gift-direction').value = 'SUBTRACT';
+            toggleCustomEventInput();
+        }
+
+        // 🌟【全新核心功能】流水紀錄刪除鍵（強制回推庫存與稽核刪除人）
+        function deleteLogItem(id) {
+            const item = state.logs.find(l => l.id === id);
+            if (!item || item.isDeleted) return;
+
+            if (!confirm(`確定要刪除/撤銷這筆項目嗎？\n項目：${item.desc}\n備註：${item.memo}`)) return;
+
+            const deleteStaff = prompt("【🚨 安全審查】請輸入執行刪除的員工姓名（必填）：");
+            if (!deleteStaff || deleteStaff.trim() === "") {
+                alert("❌ 撤銷失敗：必須填寫是誰刪除的才能執行！");
+                return;
+            }
+
+            // 執行庫存逆向回推反向反轉算式
+            state.cash -= item.cash;
+            state.canvas -= item.canvas;
+            state.bags -= item.bags;
+            state.loose -= item.loose;
+
+            // 標記為已刪除
+            item.isDeleted = true;
+            item.deletePerson = deleteStaff.trim();
+
+            alert(`撤銷成功！此筆歷史變動金額與庫存已全數原路回推扣除，大水已導正。`);
+            updateUI();
+        }
+
+        function openCloseModal() {
+            document.getElementById('close-modal').style.display = 'flex';
+            document.getElementById('report-wrapper').style.display = 'none';
+        }
+        function closeModal() {
+            document.getElementById('close-modal').style.display = 'none';
+        }
+
+        function calculateDiscrepancy() {
+            const rCash = parseInt(document.getElementById('real-cash').value);
+            const rCanvas = parseInt(document.getElementById('real-canvas').value);
+            const rBags = parseInt(document.getElementById('real-bags').value);
+            const rLoose = parseInt(document.getElementById('real-loose').value);
+            const staffA = document.getElementById('staff-a').value.trim();
+            const staffB = document.getElementById('staff-b').value.trim();
+
+            if (isNaN(rCash) || isNaN(rCanvas) || isNaN(rBags) || isNaN(rLoose) || !staffA || !staffB) {
+                alert('請完整填寫所有欄位！');
+                return;
+            }
+
+            const diffCash = rCash - state.cash;
+            const diffCanvas = rCanvas - state.canvas;
+            const diffBags = rBags - state.bags;
+            const diffLoose = rLoose - state.loose;
+
+            let reportHtml = `
+                <h3 style="margin-bottom:8px; font-size:1rem;">📊 盲測對帳大水報告：</h3>
+                <p>💰 現金誤差：<span class="${diffCash === 0 ? 'diff-ok' : 'diff-error'}">${diffCash >= 0 ? '+' : ''}${diffCash} 元</span> (帳面:$${state.cash} | 實點:$${rCash})</p>
+                <p>📦 倉庫誤差：<span class="${diffCanvas === 0 ? 'diff-ok' : 'diff-error'}">${diffCanvas >= 0 ? '+' : ''}${diffCanvas} 袋</span> (帳面:${state.canvas} | 實點:${rCanvas})</p>
+                <p>🛍️ 50枚包誤差：<span class="${diffBags === 0 ? 'diff-ok' : 'diff-error'}">${diffBags >= 0 ? '+' : ''}${diffBags} 包</span> (帳面:${state.bags} | 實點:${rBags})</p>
+                <p>🪙 散幣誤差：<span class="${diffLoose === 0 ? 'diff-ok' : 'diff-error'}">${diffLoose >= 0 ? '+' : ''}${diffLoose} 枚</span> (帳面:${state.loose} | 實點:${rLoose})</p>
+            `;
+            document.getElementById('report-text').innerHTML = reportHtml;
+            document.getElementById('report-wrapper').style.display = 'block';
+        }
+
+        function confirmShiftEnd() {
+            const rCash = parseInt(document.getElementById('real-cash').value);
+            const rCanvas = parseInt(document.getElementById('real-canvas').value);
+            const rBags = parseInt(document.getElementById('real-bags').value);
+            const rLoose = parseInt(document.getElementById('real-loose').value);
+            const staffA = document.getElementById('staff-a').value.trim();
+            const staffB = document.getElementById('staff-b').value.trim();
+
+            logAction('🏁 班次結算', `【${staffA}】移交給【${staffB}】結班清點`, 0, 0, 0, 0, `實點現金:${rCash} | 帆布袋:${rCanvas} | 夾鏈袋:${rBags} | 散幣:${rLoose}`);
+            
+            state.cash = 0; 
+            state.canvas = rCanvas;
+            state.bags = rBags;
+            state.loose = rLoose;
+
+            document.getElementById('real-cash').value = '';
+            document.getElementById('real-canvas').value = '';
+            document.getElementById('real-bags').value = '';
+            document.getElementById('real-loose').value = '';
+            document.getElementById('staff-a').value = '';
+            document.getElementById('staff-b').value = '';
+
+            alert(`【🏁 結班成功】本班次已完成交接紀錄！現金已正式執行【安全歸零移交】，新班次的現金起點為 $0 元。`);
+            closeModal();
+            updateUI();
+        }
+
+        function exportToCSV() {
+            if (state.logs.length === 0) return alert('目前尚無任何流水帳資料。');
+            
+            const totalCoinVolume = (state.bags * 50) + state.loose;
+            const currentDateTime = `${getDateStr()} ${getTimeStr()}`;
+
+            let csvContent = "\uFEFF"; 
+            csvContent += `### 🪐 星球基地 財務結算摘要資訊 ###\n`;
+            csvContent += `當次下載對帳時間,${currentDateTime}\n`;
+            csvContent += `櫃檯當前總現金,$${state.cash} 元\n`;
+            csvContent += `櫃檯代幣總換算庫存,${totalCoinVolume} 枚 (包含 ${state.bags} 包夾鏈袋 與 ${state.loose} 枚散幣)\n`;
+            csvContent += `倉庫總備品儲備,${state.canvas} 袋帆布袋\n`;
+            csvContent += `==================================================================\n\n`;
+
+            csvContent += "日期,時間,項目與摘要,狀態,現金變動,倉庫變動(袋),夾鏈袋變動(包),散幣變動(枚),備註/經手人/會員\n";
+            state.logs.forEach(l => {
+                let statusStr = l.isDeleted ? `已由[${l.deletePerson}]刪除撤銷` : "有效紀錄";
+                csvContent += `"${l.date}","${l.time}","${l.desc}","${statusStr}",${l.cash},${l.canvas},${l.bags},${l.loose},"${l.memo}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `星球基地_總對帳單_${getDateStr()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
