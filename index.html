@@ -50,7 +50,6 @@
         .btn-quick span { display: block; font-size: 0.75rem; color: #64748b; }
         .btn-quick:active { background: #e2e8f0; }
 
-        /* 刪除小按鈕 */
         .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 6px; }
         .btn-delete:active { background: #fee2e2; }
 
@@ -114,7 +113,6 @@
     </div>
 
     <div class="grid">
-        <!-- 區塊一：櫃檯庫存內部轉換（加入倉庫增加設置位置） -->
         <div class="card">
             <h2>🔄 櫃檯庫存內部轉換</h2>
             <button class="btn btn-success" style="background-color: var(--success); margin-bottom: 12px;" onclick="addCanvasStock()">➕ 倉庫帆布袋進貨 (+1袋)</button>
@@ -123,7 +121,6 @@
             <p style="font-size:0.75rem; color:#94a3b8; text-align:center; margin-top:5px;">※ 散幣盤上限 500 枚，拆包前請注意空間</p>
         </div>
 
-        <!-- 區塊二：客人購買星球幣 -->
         <div class="card">
             <h2>🪙 客人換星球幣 (1枚 = 10元)</h2>
             <div style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
@@ -144,20 +141,6 @@
             <button class="btn btn-success" onclick="buyCoinsCustom()">確認送出散買</button>
         </div>
 
-        <!-- 區塊三：客人將星球幣換回現金 -->
-        <div class="card" style="border: 1px solid #fca5a5; background: #fff5f5;">
-            <h2 style="border-left-color: var(--danger); color: #991b1b;">🛸 客人星球幣換回現金 (需留記錄)</h2>
-            <p style="font-size:0.75rem; color:#b91c1c; margin-bottom:10px;">※ 大額兌回會自動記錄當下時間，且【經手人】與【會員】為強制必填項目。</p>
-            <div class="quick-grid">
-                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1, 10, true)">🔄 1 枚 <span>退 $10 現金 (快速免填)</span></button>
-                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(250, 2000, false)">🔄 250 枚 <span>退 $2,000 現金</span></button>
-                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(630, 5000, false)">🔄 630 枚 <span>退 $5,000 現金</span></button>
-                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1300, 10000, false)">🔄 1300 枚 <span>退 $10,000 現金</span></button>
-                <button class="btn-quick" style="border-color:#fca5a5; grid-column: span 2;" onclick="refundCoins(125000, 100000, false)">🔄 125,000 枚 大額兌回 <span>退 $100,000 現金</span></button>
-            </div>
-        </div>
-
-        <!-- 區塊四：商品販售區（擴充八門遁甲、決戰七星、一發入魂） -->
         <div class="card">
             <h2>🛍️ 商品販售區 (實收現金，代幣不減)</h2>
             <div class="quick-grid">
@@ -177,13 +160,12 @@
             </div>
         </div>
 
-        <!-- 區塊五：送幣與故障補幣登記（加入兌千沒中快捷按鈕） -->
         <div class="card" style="border: 1px solid #cbd5e1; background: #fafafa;">
             <h2>🎁 送幣 / 補幣 / 萬用活動變動登記 (無現金交易)</h2>
             
             <div style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fef3c7; margin-bottom: 12px;">
-                <label style="color:var(--warning); font-weight: bold; margin-bottom: 6px;">⚡ 常見活動一鍵快選區</label>
-                <button class="btn btn-warning" style="margin-bottom:0; font-size:0.9rem; color:var(--dark);" onclick="quickGiftScratchcard()">🎯 兌千刮刮樂沒中送 1 枚 (自動代入)</button>
+                <label style="color:var(--warning); font-weight: bold; margin-bottom: 6px;">⚡ 常見活動一鍵極速快選（免填資料）</label>
+                <button class="btn btn-warning" style="margin-bottom:0; font-size:0.9rem; color:var(--dark); background-color: #f59e0b;" onclick="quickGiftScratchcardInstant()">🎯 兌千刮刮樂沒中送 1 枚 (免填直接扣)</button>
             </div>
 
             <div class="form-group">
@@ -225,9 +207,20 @@
             </div>
             <button class="btn btn-warning" onclick="submitGift()">登記變動項目</button>
         </div>
+
+        <div class="card" style="border: 1px solid #fca5a5; background: #fff5f5;">
+            <h2 style="border-left-color: var(--danger); color: #991b1b;">🛸 客人星球幣換回現金 (需留記錄)</h2>
+            <p style="font-size:0.75rem; color:#b91c1c; margin-bottom:10px;">※ 大額兌回會自動記錄當下時間，且【經手人】與【會員】為強制必填項目。</p>
+            <div class="quick-grid">
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1, 10, true)">🔄 1 枚 <span>退 $10 現金 (快速免填)</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(250, 2000, false)">🔄 250 枚 <span>退 $2,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(630, 5000, false)">🔄 630 枚 <span>退 $5,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5;" onclick="refundCoins(1300, 10000, false)">🔄 1300 枚 <span>退 $10,000 現金</span></button>
+                <button class="btn-quick" style="border-color:#fca5a5; grid-column: span 2;" onclick="refundCoins(125000, 100000, false)">🔄 125,000 枚 大額兌回 <span>退 $100,000 現金</span></button>
+            </div>
+        </div>
     </div>
 
-    <!-- 流水帳查看與交班（加入刪除鍵與姓名稽核機制） -->
     <div class="card" style="margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h2>📜 本班次隨時流水紀錄</h2>
@@ -446,7 +439,6 @@
             });
         }
 
-        // 🌟【全新功能】手動增加倉庫帆布袋進貨
         function addCanvasStock() {
             logAction('庫存變動', '倉庫帆布袋進貨', 0, 1, 0, 0, '補貨入倉庫庫存');
             alert('成功！倉庫帆布袋庫存已增加 1 袋。');
@@ -455,7 +447,11 @@
         function convertStock(action) {
             if (action === 'canvas_to_bags') {
                 if (state.canvas < 1) return alert('倉庫帆布袋庫存不足！');
-                logAction('庫存轉換', '倉庫提領 1 帆布袋', 0, -1, 30, 0, '補貨到櫃檯');
+                // 🌟 老闆規格：拿帆布袋強制要求留下經手人姓名
+                let taker = prompt("【📦 倉庫提領安全查核】請填入至倉庫拿取帆布袋的「員工姓名」(必填)：");
+                if (!taker || taker.trim() === "") return alert("❌ 提領被阻擋：必須登記提領人姓名！");
+                
+                logAction('庫存轉換', '倉庫提領 1 帆布袋', 0, -1, 30, 0, `經手提領人:${taker.trim()} | 補貨到櫃檯`);
             } else if (action === 'bag_to_loose') {
                 if (state.bags < 1) return alert('櫃檯50枚夾鏈袋不足！');
                 if (state.loose + 50 > 500) {
@@ -579,13 +575,11 @@
             }
         }
 
-        // 🌟【全新功能】兌千刮刮樂沒中送1枚一鍵快選代入
-        function quickGiftScratchcard() {
-            document.getElementById('gift-event').value = '兌千刮刮樂沒中送幣';
-            document.getElementById('gift-direction').value = 'SUBTRACT';
-            document.getElementById('gift-amount').value = 1;
-            toggleCustomEventInput();
-            alert('已成功自動填寫活動為【兌千刮刮樂沒中送幣】、數量【1枚】，請填寫經手人與會員即可按登記送出！');
+        // 🌟【大升級規格：免填無腦流】兌千刮刮樂沒中快捷扣幣
+        function quickGiftScratchcardInstant() {
+            if (state.loose < 1) return alert("❌ 扣除失敗：目前櫃檯散幣盤空了，請先拆包夾鏈袋！");
+            logAction('項目變動', '🎁活動扣幣-兌千刮刮樂沒中送幣', 0, 0, 0, -1, '[極速登記] 兌千刮刮樂沒中贈幣');
+            alert('秒扣成功！已直接扣除櫃檯散幣盤 1 枚，不需填寫任何繁瑣資料。');
         }
 
         function submitGift() {
@@ -645,7 +639,6 @@
             toggleCustomEventInput();
         }
 
-        // 🌟【全新核心功能】流水紀錄刪除鍵（強制回推庫存與稽核刪除人）
         function deleteLogItem(id) {
             const item = state.logs.find(l => l.id === id);
             if (!item || item.isDeleted) return;
@@ -658,17 +651,15 @@
                 return;
             }
 
-            // 執行庫存逆向回推反向反轉算式
             state.cash -= item.cash;
             state.canvas -= item.canvas;
             state.bags -= item.bags;
             state.loose -= item.loose;
 
-            // 標記為已刪除
             item.isDeleted = true;
             item.deletePerson = deleteStaff.trim();
 
-            alert(`撤銷成功！此筆歷史變動金額與庫存已全數原路回推扣除，大水已導正。`);
+            alert(`撤銷成功！庫存與金額已原路推回校正。`);
             updateUI();
         }
 
@@ -737,7 +728,7 @@
         }
 
         function exportToCSV() {
-            if (state.logs.length === 0) return alert('目前尚無任何流水帳資料。');
+            if (state.logs.length === 0) return alert('目前尚無 any 流水帳資料。');
             
             const totalCoinVolume = (state.bags * 50) + state.loose;
             const currentDateTime = `${getDateStr()} ${getTimeStr()}`;
